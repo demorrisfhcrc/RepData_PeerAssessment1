@@ -49,7 +49,8 @@ dataset.
 
 The following code downloads, unzips and loads the code.
 
-```{r}
+
+```r
 download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip",
               "data/repdata_data_activity.zip",method="curl")
 unzip("data/repdata_data_activity.zip",exdir = "data")
@@ -61,7 +62,8 @@ data = read.csv("data/activity.csv",header=T)
 
 Ignoring the missing values in the dataset, a histogram is shown below of the total number of steps taken each day.  The mean and median are shown in the title of the graph.
 
-```{r}
+
+```r
 totStep = aggregate(steps~date,data=subset(data,!is.na(steps)),FUN=sum)
 
 meanTotSteps = mean(totStep$steps)
@@ -71,11 +73,14 @@ main=sprintf("Histogram of total steps in a day (ignoring missing)\nMean = %4.2f
 hist(totStep$steps,main=main,xlab="Total Steps",breaks=20,xlim = c(0,25000))
 ```
 
+![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2.png) 
+
 ### What is the average daily activity pattern?
 
 Again, ignoring the missing values in the dataset, a time series plot is shown below averaging the number of steps in each 5-minute interval across all the days.  The maximum interval is shown in the title.
 
-````{r}
+
+```r
 meanStep = aggregate(steps~interval,data=subset(data,!is.na(steps)),FUN=mean)
 
 intervalMax = meanStep$interval[which(meanStep$steps == max(meanStep$steps))]
@@ -84,25 +89,49 @@ main=sprintf("Time series plot of mean steps by interval (ignoring missing)\nMax
 plot(meanStep$steps~meanStep$interval,main=main,xlab="Time Interval",ylab="Mean Steps",type="l")
 ```
 
+![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3.png) 
+
 ### Imputing missing values
 
 There are a number of days/intervals where there are missing values (coded as `NA`). The presence of missing days may introduce bias into some calculations or summaries of the data.
 
 The tables below show the number of missing values, and that all the missing is confined to 8 days.
 
-```{r}
-table(is.na(data$steps))
 
+```r
+table(is.na(data$steps))
+```
+
+```
+## 
+## FALSE  TRUE 
+## 15264  2304
+```
+
+```r
 missingTot = aggregate(is.na(steps)~date,data = data, FUN=sum)
 names(missingTot)[2] = "missingTot"
 subset(missingTot,missingTot>0)
+```
+
+```
+##          date missingTot
+## 1  2012-10-01        288
+## 8  2012-10-08        288
+## 32 2012-11-01        288
+## 35 2012-11-04        288
+## 40 2012-11-09        288
+## 41 2012-11-10        288
+## 45 2012-11-14        288
+## 61 2012-11-30        288
 ```
 
 Since the missingness is by day, the imputation strategy that makes the most sense is to use the mean for the interval for the non-missing days.
 
 dataNew below is a new dataset where the missing values are filled in with the mean value for that interval.
 
-```{r}
+
+```r
 dataNew = merge(data,meanStep,by="interval",suffix = c("","_mean"))
 dataNew$steps = ifelse(is.na(dataNew$steps),dataNew$steps_mean,dataNew$steps)
 dataNew$steps_mean = NULL
@@ -110,7 +139,8 @@ dataNew$steps_mean = NULL
 
 Below is a set of histograms before and after imputation.  Each shows the total number of steps taken each day and the title of each plot shows the mean and median.
 
-```{r}
+
+```r
 totStepI = aggregate(steps~date,data=dataNew,FUN=sum)
 
 meanTotStepsI = mean(totStepI$steps)
@@ -131,13 +161,16 @@ hist(totStep$steps,main=main,xlab="Total Steps",breaks=20,xlim = c(0,25000),ylim
 hist(totStepI$steps,main=mainI,xlab="Total Steps",breaks=20,xlim = c(0,25000),ylim=c(0,maxcounts))
 ```
 
+![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6.png) 
+
 The mean doesn't change which isn't suprising giving the regularity of the missingness pattern and that we filled in the missing values with a mean.  The height of the mode (the most frequent total of days) is higher and all other values of the histogram are reduced.
 
 ### Are there differences in activity patterns between weekdays and weekends?
 
 The code below creates a new factor variable called "daytype" which specifies whether each day is a "weekday" or a "weekend".  Then we create a set of time series plots one for weekdays and one for weekends. 
 
-```{r}
+
+```r
 dataNew$daytype = factor(ifelse(weekdays(as.Date(dataNew$date)) %in% c("Saturday","Sunday"),
                          "weekend","weekday"))
 
@@ -149,5 +182,7 @@ plot(steps~interval,main="Weekday Mean steps per interval",data=subset(meanStepD
 plot(steps~interval,main="Weekend Mean steps per interval",data=subset(meanStepDT,daytype=="weekend"),
      type="l",ylim=range(meanStepDT$steps))
 ```
+
+![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7.png) 
 
 Basically, the activity is more dispersed on weekends.  That is, the time doesn't matter as much on weekends.  Note that slower rise in the morning, and that relatively low peak at the mode.   Then in general more activity occurs later in the day.
